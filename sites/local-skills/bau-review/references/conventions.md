@@ -14,13 +14,19 @@ Many pages on canonical.com, ubuntu.com and similar sites are built from `templa
 ## Content and metadata
 
 - **Title vs H1.** The meta `title` often differs from the `<h1>` because it comes from the copydoc's SEO section. That's intentional. Only check the title against the SEO section.
-- **Contact CTAs.** `/contact-us` with `js-invoke-modal` + `aria-controls` opens the page's contact pop-up and still works without JavaScript. If the copydoc or Figma says `#get-in-touch`, `/contact-us` is the accepted implementation, because `#get-in-touch` breaks without JS. Don't flag that difference. Do flag `/contact-us` links that open the pop-up in some places but not others, as long as the macro lets that link take attributes.
+- **Contact CTAs.** There are two working patterns:
+  - **`href="/contact-us"` with `js-invoke-modal` + `aria-controls`:** opens the page's contact pop-up and still works without JavaScript. Use this wherever the link can take attributes, e.g. the `vf_hero` CTA or raw HTML.
+  - **`href="<page>#get-in-touch"`:** `static/js/modals.js` opens the contact pop-up whenever the URL hash is `#get-in-touch`, so this works even where the macro can't add `js-invoke-modal`, e.g. `vf_data_spotlight` links. Without JS it does nothing, because no element has that id. It's an acceptable trade-off for macro links, but suggest `/contact-us` + `js-invoke-modal` wherever attributes are allowed.
+
+  Copydocs and Figma usually write `#get-in-touch`, so either implementation is fine. Check every Contact CTA opens the pop-up by clicking it in a browser test.
 - **Copy-pasted URLs.** Flag tracking or session parameters pasted in from a browser (`?_gl=`, `_gcl_aw`, `_gcl_au`, `utm_*`, `usp=sharing`) and give the clean URL.
 - **Brands named in copy.** Check that every brand or product named in the copy (e.g. in a logo list) appears on the page, and the other way round.
 
 ## Markup
 
 - **Ids copied from examples.** An id like `id="2-blocks"` was copied from a macro example. It's meaningless, may collide with other ids, and fails `valid-id` because it starts with a digit.
+- **`role="list"` on a `<ul>`** with list styling removed is deliberate: Safari drops list semantics without it. html-validate reports it as `no-redundant-role`. Don't flag it.
+- **Page-level `<style nonce="{{ csp_nonce }}">` blocks** inside `{% block content %}` are an established pattern on canonical.com data pages (e.g. kafka, lakehouse, services). html-validate reports `<style>` inside `<div>`, but it isn't a finding for content PRs.
 - **Spacing utilities.** `u-no-margin--bottom` and similar often differ on purpose between blocks, e.g. a heading followed by a button vs one followed by a text link. Only flag spacing when Figma shows a difference.
 - **Lazy loading.** Judge "below the fold" at desktop size (1440×900). A section visible in the first desktop viewport, such as a logo row right under the hero, can keep `loading="auto"`.
 - **Informative logos.** A logo with text in it (e.g. "Includes MySQL") is informative and needs alt text such as `alt="MySQL"`, not `alt=""`.
@@ -39,3 +45,8 @@ The contact form included by `load_form` currently produces several validation e
 
 - The nav search overlay (`.p-navigation__search-overlay`) is a fixed full-viewport layer that paints a grey band over element screenshots. `scripts/capture.mjs` hides it.
 - Lazy-loaded images can come out blank if the capture scrolls too fast. Re-capture before reporting missing images.
+
+## Tooling notes
+
+- When there's no demo-specific failure, a 404 for a `/docs/...` path on the demo is expected, because docs are served in production only. Check the same path on the live site instead.
+- The live site can return 5xx at times. If it does, work out where an error comes from by checking other pages built from the same macro.

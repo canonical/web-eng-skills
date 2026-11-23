@@ -100,7 +100,10 @@ Get the frame referenced by the Figma link's `node-id`, using the first of these
    - `GET https://api.figma.com/v1/files/<file_key>/nodes?ids=<node_id>` (header `X-Figma-Token: $FIGMA_TOKEN`) returns the node tree and text.
    - `GET https://api.figma.com/v1/images/<file_key>?ids=<node_id>&format=png&scale=1` returns a render URL. Download it into `$WORK`.
 3. **An earlier comparison** posted on the PR (step 1), if one exists. Say that you relied on it.
-4. **Ask the user** for an export of the frame.
+4. **Ask the user** for an export of the frame. A PNG export works, or a PDF export (in Figma, File → Export frames to PDF). With a PDF:
+   - `pdftoppm -r 72 -png <file>.pdf $WORK/fig` renders each frame at 1px per CSS pixel. Crop tall frames into sections of about 1100px before viewing them.
+   - `pdftotext -layout <file>.pdf $WORK/fig.txt` gives the design's text, so you can compare wording exactly.
+   - Extra small pages in the PDF are usually designer notes, such as "Specs for devs". Read them, because they often explain deliberate choices.
 
 Compare design and demo section by section, at each breakpoint the design provides:
 - section order, layout and grid
@@ -122,9 +125,27 @@ Read the Google Doc using the first of these that works:
 1. **A Google Drive or Docs tool** your harness provides. Include comments if it supports them. "Not found" usually means the doc isn't shared with the connected account.
 2. **A public export:** `curl -sL "https://docs.google.com/document/d/<id>/export?format=txt"`. A 401 or an HTML login page means the doc is private.
 3. **A browser tool** that's signed in to Google.
-4. **Ask the user** to share the doc or paste its text. Carry on with the rest of the review meanwhile.
+4. **Ask the user** to share the doc or paste its text. If the connected Google account isn't the one that owns the doc (e.g. a personal account vs a work account), the simplest option is a download (File → Download → PDF or Markdown). Carry on with the rest of the review meanwhile.
 
-Use the final, accepted text. Note any unresolved suggestions or comments that affect the content.
+**From a PDF export:** read the text directly. Then get the link targets, which the text alone loses:
+
+```bash
+pdftohtml -xml -i -q <copydoc>.pdf $WORK/copydoc
+python3 -c "import re,html,sys; s=open(sys.argv[1]).read(); [print(repr(html.unescape(re.sub('<[^>]+>','',t)).strip()), '->', html.unescape(h)) for h,t in re.findall(r'<a href=\"([^\"]+)\">(.*?)</a>', s, re.S)]" $WORK/copydoc.xml
+```
+
+Copydocs sometimes link to the wrong page, e.g. a template's links copied from another product. When the copydoc's link is clearly an error and the page has the right one, say so rather than flagging the page.
+
+A downloaded copydoc may be stored somewhere unexpected. Read it where it is, keep any extracts in `$WORK`, and delete them when the review is done.
+
+Use the final, accepted text. Note any unresolved suggestions or comments that affect the content. Text highlighted in the copydoc (often green) usually marks a recent or requested change. Check the PR discussion for it.
+
+**When sources disagree,** the most recent approved instruction wins:
+1. Change requests in PR comments from the copy or UX reviewer (e.g. "two small CTA copy updates").
+2. The copydoc, for wording, spelling, link targets and SEO metadata.
+3. Figma, for layout, components, images and the navigation structure.
+
+When Figma and the copydoc disagree on wording (e.g. "data centre" vs "data center", or "VMWare" vs "VMware"), follow the copydoc. Mention the difference so the designer can update Figma, but don't count it against the PR.
 
 Compare the copydoc with `page-text.txt` word for word:
 - Missing, extra or reordered sections and paragraphs.
