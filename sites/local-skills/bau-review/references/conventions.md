@@ -48,5 +48,5 @@ The contact form included by `load_form` currently produces several validation e
 
 ## Tooling notes
 
-- When there's no demo-specific failure, a 404 for a `/docs/...` path on the demo is expected, because docs are served in production only. Check the same path on the live site instead.
+- A 404 for a `/docs/...` path on the demo is expected, because docs are served in production only. Check the same path on the live site instead.
 - The live site can return 5xx at times. If it does, work out where an error comes from by checking other pages built from the same macro.
