@@ -1,0 +1,4 @@
+[flake8]
+# The same line length as black; E203 conflicts with how black formats slices
+max-line-length = 88
+extend-ignore = E203
